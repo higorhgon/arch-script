@@ -82,7 +82,8 @@ then
         com.microsoft.Edge \
         com.usebottles.bottles \
         org.gimp.GIMP \
-        org.videolan.VLC
+        org.videolan.VLC \
+        io.github.shiftey.Desktop
 
     #RECARREGA CONFIGS ZSH
     source .zshrc
