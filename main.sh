@@ -55,6 +55,9 @@ then
         gnome-music \
         gnome-contacts \
         gnome-maps \
+        gnome-weather \
+        gnome-calendar \
+        gnome-console \
         gnome-software \
         epiphany \
         totem \
@@ -76,14 +79,16 @@ then
 
 
     #PACOTES FLATPAK
-    flatpak install \
+    flatpak install -y \
         io.github.realmazharhussain.GdmSettings \
         com.anydesk.Anydesk \
         com.microsoft.Edge \
         com.usebottles.bottles \
         org.gimp.GIMP \
         org.videolan.VLC \
-        io.github.shiftey.Desktop
+        io.github.shiftey.Desktop \
+        com.visualstudio.code \
+        org.libreoffice.LibreOffice
 
     #RECARREGA CONFIGS ZSH
     source .zshrc
