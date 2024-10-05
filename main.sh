@@ -15,29 +15,49 @@ then
         tldr \
         noto-fonts-cjk \
         ttf-ms-fonts \
+        gnome-browser-connector \
         docker \
         docker-compose \
         docker-buildx
 
+    cd ~
     git clone https://aur.archlinux.org/snapd-glib.git
     cd snapd-glib
     makepkg -si --noconfirm
 
+    cd ~
     git clone https://aur.archlinux.org/snapd.git
     cd snapd
     makepkg -si --noconfirm
 
+    cd ~
     git clone https://aur.archlinux.org/libpamac-full.git
     cd libpamac-full
     makepkg -si --noconfirm
 
+    cd ~
     git clone https://aur.archlinux.org/pamac-cli.git
     cd pamac-cli
     makepkg -si --noconfirm
 
+    cd ~
     git clone https://aur.archlinux.org/pamac-all.git
     cd pamac-all
     makepkg -si --noconfirm
+
+    cd ~
+    git clone https://aur.archlinux.org/gnome-shell-extension-forge.git
+    cd gnome-shell-extension-forge
+    makepkg -si --noconfirm
+
+    cd ~
+    rm -rf \
+        gnome-shell-extension-forge \
+        pamac-all \
+        pamac-cli \
+        libpamac-full \
+        snapd \
+        snapd-glib
 
     #INSTALACAO ATUIN (Ctrl + R)
     curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh\n
