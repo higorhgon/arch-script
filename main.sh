@@ -8,6 +8,9 @@ then
     sudo pacman -Syu --needed --noconfirm \
         base-devel \
         git \
+        dosfstools \
+        ntfs-3g \
+        exfatprogs \
         zsh-completions \
         tilix \
         duf \
@@ -48,6 +51,11 @@ then
     cd ~
     git clone https://aur.archlinux.org/gnome-shell-extension-forge.git
     cd gnome-shell-extension-forge
+    makepkg -si --noconfirm
+
+    cd ~
+    git clone https://gitlab.manjaro.org/packages/extra/bibata-cursor-theme.git
+    cd bibata-cursor-theme
     makepkg -si --noconfirm
 
     cd ~
