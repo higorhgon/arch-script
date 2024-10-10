@@ -17,7 +17,6 @@ then
         ncdu \
         tldr \
         noto-fonts-cjk \
-        ttf-ms-fonts \
         papirus-icon-theme \
         gnome-browser-connector \
         docker \
@@ -50,15 +49,15 @@ then
     makepkg -si --noconfirm
 
     cd ~
-    git clone https://aur.archlinux.org/gnome-shell-extension-forge.git
     git clone https://aur.archlinux.org/ttf-ms-fonts.git
     cd ttf-ms-fonts
     makepkg -si --noconfirm
 
     cd ~
-    git clone https://gitlab.manjaro.org/packages/extra/bibata-cursor-theme.git
-    cd bibata-cursor-theme
+    git clone https://aur.archlinux.org/bibata-cursor-theme-bin.git
+    cd bibata-cursor-theme-bin
     makepkg -si --noconfirm
+
 
     #LIMPA SOURCES
     cd ~
@@ -95,7 +94,7 @@ then
         gnome-software \
         epiphany \
         totem \
-        vim
+        vim 
 
     #SWAPFILE
     sudo swapoff /dev/zram0
