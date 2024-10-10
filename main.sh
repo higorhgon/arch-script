@@ -18,6 +18,7 @@ then
         tldr \
         noto-fonts-cjk \
         ttf-ms-fonts \
+        papirus-icon-theme \
         gnome-browser-connector \
         docker \
         docker-compose \
@@ -50,7 +51,8 @@ then
 
     cd ~
     git clone https://aur.archlinux.org/gnome-shell-extension-forge.git
-    cd gnome-shell-extension-forge
+    git clone https://aur.archlinux.org/ttf-ms-fonts.git
+    cd ttf-ms-fonts
     makepkg -si --noconfirm
 
     cd ~
@@ -58,9 +60,11 @@ then
     cd bibata-cursor-theme
     makepkg -si --noconfirm
 
+    #LIMPA SOURCES
     cd ~
     rm -rf \
-        gnome-shell-extension-forge \
+        bibata-cursor-theme-bin \
+        ttf-ms-fonts \
         pamac-all \
         pamac-cli \
         libpamac-full \
@@ -68,9 +72,11 @@ then
         snapd-glib
 
     #INSTALACAO ATUIN (Ctrl + R)
-    curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh\n
-    atuin import auto
+    curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
     sed -i 's/eval \"$(atuin init zsh)\"/eval \"$(atuin init zsh --disable-up-arrow)\"/g' .zshrc
+    source .zshrc
+    atuin import auto
+    
 
     #CONFIG DOCKER
     sudo groupadd docker
@@ -100,8 +106,8 @@ then
 
     #OH MY ZSH
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions\n
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting\n
+    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
     sed -i 's/ZSH_THEME=\"robbyrussell\"/ZSH_THEME=\"agnoster\"/g' .zshrc
     sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/g' .zshrc
 
@@ -122,7 +128,7 @@ then
     source .zshrc
 else 
     echo "Você não possui ZSH!!!"
-    sudo pacman -S zsh
+    sudo pacman -S --noconfirm zsh
 
     echo "Inicie este script novamente"
     zsh
