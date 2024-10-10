@@ -19,9 +19,14 @@ then
         noto-fonts-cjk \
         papirus-icon-theme \
         gnome-browser-connector \
+        networkmanager-openvpn \
+        plymouth \
+        downgrade \
         docker \
         docker-compose \
         docker-buildx
+
+    sudo downgrade openvpn
 
     cd ~
     git clone https://aur.archlinux.org/snapd-glib.git
@@ -129,6 +134,6 @@ else
     echo "Você não possui ZSH!!!"
     sudo pacman -S --noconfirm zsh
 
-    echo "Inicie este script novamente"
-    zsh
+    echo "Iniciando este script novamente"
+    zsh -s $0
 fi
