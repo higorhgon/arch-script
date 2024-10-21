@@ -162,6 +162,8 @@ then
 
     #RECARREGA CONFIGS ZSH
     source .zshrc
+
+    #ICONE ags hyprland system-search-symbolic
 else 
     echo "Você não possui ZSH!!!"
     sudo pacman -S --noconfirm zsh
