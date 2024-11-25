@@ -15,90 +15,49 @@ then
         tilix \
         duf \
         ncdu \
+        eza \
+        fzf \
         tldr \
         noto-fonts-cjk \
         papirus-icon-theme \
-        gnome-browser-connector \
         networkmanager-openvpn \
         plymouth \
-        ttf-profont-nerd \
         os-prober \
         nwg-look \
         docker \
         docker-compose \
-        docker-buildx
-        #nerdfonts-installer-bin
+        docker-buildx \
+        neovim \
+        npm \
+        ripgrep \
+        fish \
+        atuin \
+        starship
 
     cd ~
-    git clone https://aur.archlinux.org/snapd-glib.git
-    cd snapd-glib
-    makepkg -si --noconfirm
-
-    cd ~
-    git clone https://aur.archlinux.org/snapd.git
-    cd snapd
-    makepkg -si --noconfirm
-
-    cd ~
-    git clone https://aur.archlinux.org/libpamac-full.git
-    cd libpamac-full
-    makepkg -si --noconfirm
-
-    cd ~
-    git clone https://aur.archlinux.org/pamac-cli.git
-    cd pamac-cli
-    makepkg -si --noconfirm
-
-    cd ~
-    git clone https://aur.archlinux.org/pamac-all.git
-    cd pamac-all
-    makepkg -si --noconfirm
-
-    cd ~
-    git clone https://aur.archlinux.org/ttf-ms-fonts.git
-    cd ttf-ms-fonts
-    makepkg -si --noconfirm
-
-    cd ~
-    git clone https://aur.archlinux.org/bibata-cursor-theme-bin.git
-    cd bibata-cursor-theme-bin
-    makepkg -si --noconfirm
-
-    cd ~
-    git clone https://aur.archlinux.org/downgrade.git
-    cd downgrade
-    makepkg -si --noconfirm
-
-    cd ~
-    git clone https://aur.archlinux.org/microsoft-edge-stable-bin.git
-    cd microsoft-edge-stable-bin
+    git clone https://aur.archlinux.org/yay.git
+    cd yay
     makepkg -si --noconfirm
     
-    cd ~
-    git clone https://aur.archlinux.org/visual-studio-code-bin.git
-    cd visual-studio-code-bin
-    makepkg -si --noconfirm
-
     #LIMPA SOURCES
     cd ~
-    rm -rf \
-        bibata-cursor-theme-bin \
-        ttf-ms-fonts \
-        pamac-all \
-        pamac-cli \
-        libpamac-full \
-        snapd \
-        snapd-glib \
-        downgrade \
-        microsoft-edge-stable-bin \
-        visual-studio-code-bin
-
+    rm -rf yay
+    
+    yay -S --noconfirm \
+    	pamac-all \
+    	nerdfonts-installer-bin \
+    	bibata-cursor-theme-bin \
+    	downgrade \
+    	zen-browser-avx2-bin \
+    	microsoft-edge-stable-bin \
+    	visual-studio-code-bin
+    
     #INSTALA OPENVPN COM DOWNGRADE
     sudo downgrade openvpn
+    
+    chsh -s /usr/bin/fish
 
     #INSTALACAO ATUIN (Ctrl + R)
-    curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
-    source .zshrc
     sed -i 's/eval \"$(atuin init zsh)\"/eval \"$(atuin init zsh --disable-up-arrow)\"/g' .zshrc
     source .zshrc
     atuin import auto
@@ -107,6 +66,7 @@ then
     sudo groupadd docker
     sudo usermod -aG docker $USER
     sudo systemctl enable --now docker.service
+    newgrp docker
 
     #REMOVE BLOAT
     sudo pacman -R \
@@ -114,9 +74,6 @@ then
         gnome-music \
         gnome-contacts \
         gnome-maps \
-        gnome-weather \
-        gnome-calendar \
-        gnome-console \
         gnome-software \
         epiphany \
         totem \
@@ -128,11 +85,11 @@ then
     echo "compression-algorithm = zstd" sudo >> /etc/systemd/zram-generator.conf
 
     #SPLASH
-    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet splash\"/g'
-    sed -i 's/HOOKS=(base udev/HOOKS=(base plymouth udev/g'
+    sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet splash\"/g' /etc/default/grub
+    sudo sed -i 's/HOOKS=(base udev/HOOKS=(base plymouth udev/g' /etc/mkinitcpio.conf
 
     #GRUB
-    sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/g' /etc/default/grub
+    sudo sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/g' /etc/default/grub
     sudo grub-mkconfig -o /boot/grub/grub.cfg
 
     #OH MY ZSH
