@@ -50,7 +50,10 @@ then
     	downgrade \
     	zen-browser-avx2-bin \
     	microsoft-edge-stable-bin \
-    	visual-studio-code-bin
+    	visual-studio-code-bin \
+        nautilus-open-any-terminal
+
+    gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty
     
     #INSTALA OPENVPN COM DOWNGRADE
     sudo downgrade openvpn
