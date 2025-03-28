@@ -12,12 +12,11 @@ then
         ntfs-3g \
         exfatprogs \
         zsh-completions \
-        tilix \
+        kitty \
         duf \
         ncdu \
         eza \
         fzf \
-        tldr \
         noto-fonts-cjk \
         papirus-icon-theme \
         networkmanager-openvpn \
@@ -48,6 +47,7 @@ then
     	nerdfonts-installer-bin \
     	bibata-cursor-theme-bin \
     	downgrade \
+        tlrc \
     	zen-browser-avx2-bin \
     	microsoft-edge-stable-bin \
     	visual-studio-code-bin \
@@ -78,6 +78,7 @@ then
         gnome-contacts \
         gnome-maps \
         gnome-software \
+        gnome-console \
         epiphany \
         totem \
         vim 
