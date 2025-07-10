@@ -49,10 +49,14 @@ yay -S --noconfirm \
     tree-sitter-cli \
     ripgrep \
     fish \
+    github-cli \
     atuin \
     starship
 
 chsh -s /usr/bin/fish
+
+# EXTENSÃO DO GITHUB COPILOT CLI PARA O FISH
+gh extension install devatdawn/gh-fish
 
 #INSTALA OPENVPN COM DOWNGRADE
 sudo downgrade openvpn
