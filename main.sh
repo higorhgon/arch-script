@@ -1,93 +1,178 @@
 #!/bin/bash
 
-#HABILITA BLUETOOTH E SSH
+set -e # Exit on any error
+DEBUG=0
+
+# GET DEBUG ARGUMENT
+if [[ $1 == "--debug" ]]; then
+    DEBUG=1
+    echo "Debug mode enabled"
+    echo $EUID
+fi
+
+# CHECK IF RUNNING AS ROOT
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root (use sudo)"
+    exit 1
+fi
+
+if [ $DEBUG -ne 1 ]; then
+    # GET USERNAME AND EMAIL FOR GIT
+    read -p "Enter your Git username: " git_username
+    read -p "Enter your Git email: " git_email
+    git config --global user.name "$git_username"
+    git config --global user.email "$git_email"
+
+    # GENERATE SSH KEY AND COPY TO CLIPBOARD FOR GITHUB
+    ssh-keygen -t rsa -C "$git_email"
+    echo "Copying SSH key to clipboard. Please add it to your GitHub account."
+    cat ~/.ssh/id_rsa.pub | wl-copy
+    echo "Please add the copied SSH key to your GitHub account:"
+    echo "Hold Ctrl (or Command) and click the link below to open it in your browser:"
+    printf '\e]8;;https://github.com/settings/ssh/new\e\\https://github.com/settings/ssh/new\e]8;;\e\\n'
+fi
+
+# Wait for user to confirm they have added the SSH key or Escape to exit
+read -n 1 -s -r -p "Press any key to continue after adding the SSH key, or press Escape to exit..."
+if [[ $REPLY == $'\e' ]]; then
+    echo
+    echo "Exiting script."
+    exit 1
+fi
+
+#ENABLE SERVICES
 sudo systemctl enable --now bluetooth.service
 sudo systemctl enable --now sshd.service
 
-#INSTALAÇÃO DE PACOTES
+# UPDATE SYSTEM AND INSTALL DEV DEPENDENCIES
 sudo pacman -Syu --needed --noconfirm \
     base-devel \
     git
 
-cd ~
-git clone https://aur.archlinux.org/yay.git
-cd yay
-makepkg -si --noconfirm
+# INSTALL YAY
+if command -v yay &>/dev/null; then
+    echo "Yay is already installed"
+else
+    cd ~ &&
+        git clone https://aur.archlinux.org/yay-bin.git ||
+        git clone --branch yay-bin --single-branch https://github.com/archlinux/aur.git yay-bin
+    cd yay-bin && makepkg -si --noconfirm
+    cd ~ && rm -rf yay-bin
+fi
 
-#LIMPA SOURCES
-cd ~
-rm -rf yay
-
+# FILESYSTEMS
 yay -S --noconfirm \
-    firefox \
-    downgrade \
-    tlrc \
     dosfstools \
-    ntfs-3g \
     exfatprogs \
-    kitty \
+    ntfs-3g
+
+# ESSENTIALS
+yay -S --noconfirm \
+    7zip \
+    atuin \
+    btop \
+    bluetui \
+    blueberry \
     eza \
+    fd \
+    fish \
     fzf \
-    dracula-gtk-theme \
-    bibata-cursor-theme-bin \
-    papirus-icon-theme \
-    noto-fonts-cjk \
-    ttf-jetbrains-mono \
-    ttf-nerd-fonts-symbols \
-    networkmanager-openvpn \
-    networkmanager-applet \
-    blueman \
-    plymouth \
+    ghostty \
+    gnome-calculator \
+    hyprland \
+    hyprlock \
+    hypridle \
+    impala \
+    lazydocker \
+    lazygit \
+    neovim \
+    ripgrep \
+    starship \
+    stow \
+    swaync \
+    swww \
+    tlrc \
+    tmux \
+    waybar \
+    rofi-wayland \
+    waypaper \
+    waybar \
+    wiremix \
+    wl-clipboard \
+    wl-clip-persist \
+    xdg-desktop-portal-termfilechooser-hunkyburrito-git \
+    yazi \
+    zen-browser-bin
+
+# BOOTLOADER
+yay -S --noconfirm \
     os-prober \
+    plymouth
+
+# THEMES, ICONS, FONTS AND CURSORS
+yay -S --noconfirm \
+    bibata-cursor-theme-bin \
+    catppuccin-mocha-grub-theme-git \
+    dracula-gtk-theme \
+    noto-fonts-cjk \
+    papirus-icon-theme \
+    plymouth-theme-catppuccin-mocha-git \
+    sddm-catppuccin-git \
+    ttf-jetbrains-mono \
+    ttf-jetbrains-mono-nerd \
+    ttf-nerd-fonts-symbols
+
+# TRAY APPLETS
+yay -S --noconfirm \
+    blueman \
+    network-manager-applet \
+    networkmanager-openvpn
+
+# CONTAINERS
+yay -S --noconfirm \
     docker \
     docker-compose \
-    docker-buildx \
-    neovim \
-    yazi \
-    npm \
-    go \
-    tree-sitter-cli \
-    ripgrep \
-    fish \
-    github-cli \
-    atuin \
-    starship
+    docker-buildx
 
+# LANGUAGES
+yay -S --noconfirm \
+    php \
+    nodejs-lts-jod \
+    go \
+    rustup
+
+# INITIALIZE RUST
+rustup default stable
+
+# CHANGE SHELL TO FISH
 chsh -s /usr/bin/fish
 
-# EXTENSÃO DO GITHUB COPILOT CLI PARA O FISH
-gh extension install devatdawn/gh-fish
-
-#INSTALA OPENVPN COM DOWNGRADE
-sudo downgrade openvpn
-
-#CONFIG DOCKER
+# CONFIGURE DOCKER
 sudo groupadd docker
 sudo usermod -aG docker $USER
 sudo systemctl enable --now docker.service
 newgrp docker
 
-#REMOVE BLOAT
+# REMOVE BLOAT
 sudo pacman -R \
-    gnome-tour \
-    gnome-music \
-    gnome-contacts \
-    gnome-maps \
-    gnome-software \
-    gnome-console \
-    epiphany \
-    totem \
-    vim
+    dolphin
 
-#SWAP ZRAM
-echo "[zram0]" sudo >/etc/systemd/zram-generator.conf
-echo "zram-size = ram * 4" sudo >>/etc/systemd/zram-generator.conf
-echo "compression-algorithm = zstd" sudo >>/etc/systemd/zram-generator.conf
+# SWAP ZRAM
+if grep -q "^[zram0]" /etc/systemd/zram-generator.conf; then
+    echo "zram-size = ram * 4" >>/etc/systemd/zram-generator.conf
+    echo "compression-algorithm = zstd" >>/etc/systemd/zram-generator.conf
+else
+    echo "[zram0]" >>/etc/systemd/zram-generator.conf
+    echo "zram-size = ram * 4" >>/etc/systemd/zram-generator.conf
+    echo "compression-algorithm = zstd" >>/etc/systemd/zram-generator.conf
+fi
 
-#SPLASH
+sudo plymouth-set-default-theme -R catppuccin-mocha
+
+# GRUB
 sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet splash\"/g' /etc/default/grub
+sudo sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/g' /etc/default/grub
+sudo sed -i 's|#GRUB_THEME=".*"|GRUB_THEME="/usr/share/grub/themes/catppuccin-mocha/theme.txt"|g' /etc/default/grub
 sudo sed -i 's/HOOKS=(base udev/HOOKS=(base plymouth udev/g' /etc/mkinitcpio.conf
 
-#GRUB
-sudo sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/g' /etc/default/grub
 sudo grub-mkconfig -o /boot/grub/grub.cfg
