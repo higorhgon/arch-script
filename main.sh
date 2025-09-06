@@ -158,14 +158,9 @@ sudo pacman -R \
     dolphin
 
 # SWAP ZRAM
-if grep -q "^[zram0]" /etc/systemd/zram-generator.conf; then
-    echo "zram-size = ram * 4" >>/etc/systemd/zram-generator.conf
-    echo "compression-algorithm = zstd" >>/etc/systemd/zram-generator.conf
-else
-    echo "[zram0]" >>/etc/systemd/zram-generator.conf
-    echo "zram-size = ram * 4" >>/etc/systemd/zram-generator.conf
-    echo "compression-algorithm = zstd" >>/etc/systemd/zram-generator.conf
-fi
+echo "[zram0]" >/etc/systemd/zram-generator.conf
+echo "zram-size = ram * 4" >>/etc/systemd/zram-generator.conf
+echo "compression-algorithm = zstd" >>/etc/systemd/zram-generator.conf
 
 sudo plymouth-set-default-theme -R catppuccin-mocha
 
