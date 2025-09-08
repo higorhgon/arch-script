@@ -85,7 +85,10 @@ yay -S --noconfirm \
     impala \
     lazydocker \
     lazygit \
+    less \
+    lsof \
     neovim \
+    opencode-bin \
     ripgrep \
     starship \
     stow \
