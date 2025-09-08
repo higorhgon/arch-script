@@ -82,6 +82,8 @@ yay -S --noconfirm \
     hyprland \
     hyprlock \
     hypridle \
+    hyprshot \
+    hyprpicker \
     impala \
     lazydocker \
     lazygit \
