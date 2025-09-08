@@ -122,7 +122,7 @@ yay -S --noconfirm \
     noto-fonts-cjk \
     papirus-icon-theme \
     plymouth-theme-catppuccin-mocha-git \
-    sddm-catppuccin-git \
+    catppuccin-sddm-theme-mocha \
     ttf-jetbrains-mono \
     ttf-jetbrains-mono-nerd \
     ttf-nerd-fonts-symbols
