@@ -105,7 +105,7 @@ yay -S --noconfirm \
     tlrc \
     tmux \
     waybar \
-    rofi-wayland \
+    rofi \
     waypaper \
     waybar \
     wiremix \
