@@ -73,6 +73,7 @@ yay -S --noconfirm \
     btop \
     bluetui \
     blueberry \
+    cliphist \
     eza \
     fd \
     fish \
@@ -91,7 +92,12 @@ yay -S --noconfirm \
     lsof \
     neovim \
     opencode-bin \
+    qt5ct \
+    qt6ct \
+    qt5-graphicaleffects \
+    qt6-5compat \
     ripgrep \
+    sddm-git \
     starship \
     stow \
     swaync \
@@ -125,7 +131,8 @@ yay -S --noconfirm \
     catppuccin-sddm-theme-mocha \
     ttf-jetbrains-mono \
     ttf-jetbrains-mono-nerd \
-    ttf-nerd-fonts-symbols
+    ttf-nerd-fonts-symbols \
+    ttf-nerd-fonts-symbols-mono
 
 # TRAY APPLETS
 yay -S --noconfirm \
