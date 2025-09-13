@@ -75,6 +75,9 @@ yay -S --noconfirm \
     blueberry \
     cliphist \
     eza \
+    fcitx5 \
+    fcitx5-gtk \
+    fcitx5-qt \
     fd \
     fish \
     fzf \
