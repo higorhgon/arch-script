@@ -75,6 +75,10 @@ yay -S --noconfirm \
     blueberry \
     cliphist \
     eza \
+    fcitx5 \
+    fcitx5-configtool \
+    fcitx5-gtk \
+    fcitx5-qt \
     fd \
     fish \
     fzf \
@@ -104,6 +108,8 @@ yay -S --noconfirm \
     swww \
     tlrc \
     tmux \
+    unzip \
+    7zip \
     waybar \
     rofi \
     waypaper \
