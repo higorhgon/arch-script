@@ -88,6 +88,7 @@ yay -S --noconfirm \
     hypridle \
     hyprshot \
     hyprpicker \
+    hyprpolkit \
     impala \
     lazydocker \
     lazygit \
@@ -115,6 +116,7 @@ yay -S --noconfirm \
     wl-clipboard \
     wl-clip-persist \
     xdg-desktop-portal-termfilechooser-hunkyburrito-git \
+    xorg-xhost \
     yazi \
     zen-browser-bin
 
