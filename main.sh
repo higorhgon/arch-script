@@ -91,6 +91,7 @@ yay -S --noconfirm \
     hyprpicker \
     hyprpolkit \
     impala \
+    kanata-bin \
     lazydocker \
     lazygit \
     less \
@@ -176,6 +177,17 @@ newgrp docker
 # REMOVE BLOAT
 sudo pacman -R \
     dolphin
+
+if command -v kanata &>/dev/null; then
+    echo "Configuring uinput group for Kanata"
+    echo "uinput" | sudo tee /etc/modules-load.d/uinput.conf
+    sudo groupadd -r uinput
+    sudo usermod -aG uinput $USER
+    echo 'KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-uinput.rules
+    sudo udevadm control --reload
+    sudo udevadm trigger
+    sudo modprobe -r uinput; sudo modprobe uinput
+fi
 
 # SWAP ZRAM
 echo "[zram0]" >/etc/systemd/zram-generator.conf
