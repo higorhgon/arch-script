@@ -178,6 +178,11 @@ newgrp docker
 sudo pacman -R \
     dolphin
 
+# FIX para Impala
+if command -v impala &>/dev/null; then
+    sudo systemctl enable iwd
+fi
+
 if command -v kanata &>/dev/null; then
     echo "Configuring uinput group for Kanata"
     echo "uinput" | sudo tee /etc/modules-load.d/uinput.conf
