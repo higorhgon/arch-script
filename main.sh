@@ -76,6 +76,7 @@ yay -S --noconfirm \
     cliphist \
     eza \
     fcitx5 \
+    fcitx5-configtool \
     fcitx5-gtk \
     fcitx5-qt \
     fd \
@@ -108,8 +109,10 @@ yay -S --noconfirm \
     swww \
     tlrc \
     tmux \
+    unzip \
+    7zip \
     waybar \
-    rofi-wayland \
+    rofi \
     waypaper \
     waybar \
     wiremix \
