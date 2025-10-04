@@ -98,6 +98,7 @@ yay -S --noconfirm \
     lsof \
     neovim \
     opencode-bin \
+    pamixer \
     qt5ct \
     qt6ct \
     qt5-graphicaleffects \
