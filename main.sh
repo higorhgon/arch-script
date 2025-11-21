@@ -149,9 +149,9 @@ yay -S --noconfirm \
 
 # TRAY APPLETS
 yay -S --noconfirm \
-    blueman \
-    network-manager-applet \
     networkmanager-openvpn
+    # blueman \
+    # network-manager-applet \
 
 # CONTAINERS
 yay -S --noconfirm \
