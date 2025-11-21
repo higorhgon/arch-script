@@ -97,6 +97,7 @@ yay -S --noconfirm \
     less \
     lsof \
     neovim \
+    nmrs \
     opencode-bin \
     pamixer \
     qt5ct \
@@ -115,6 +116,7 @@ yay -S --noconfirm \
     7zip \
     waybar \
     rofi \
+    rofimoji \
     waypaper \
     waybar \
     wiremix \
