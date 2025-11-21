@@ -84,6 +84,7 @@ yay -S --noconfirm \
     fzf \
     ghostty \
     gnome-calculator \
+    gnome-keyring \
     hyprland \
     hyprlock \
     hypridle \
