@@ -53,23 +53,23 @@ if grep -q "#\s*GRUB_DISABLE_OS_PROBER=" /etc/default/grub; then
     echo "✓ Enabled GRUB_DISABLE_OS_PROBER"
 fi
 
-# Set GRUB timeout to 0 for faster boot (optional)
-echo "Setting GRUB timeout to 0 for faster boot..."
+# Set GRUB timeout to 5 seconds to show menu
+echo "Setting GRUB timeout to 5 seconds to show menu..."
 if grep -q "^GRUB_TIMEOUT=" /etc/default/grub; then
-    sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
-    echo "✓ Set GRUB_TIMEOUT to 0"
+    sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/' /etc/default/grub
+    echo "✓ Set GRUB_TIMEOUT to 5"
 else
-    echo 'GRUB_TIMEOUT=0' >> /etc/default/grub
-    echo "✓ Added GRUB_TIMEOUT=0"
+    echo 'GRUB_TIMEOUT=5' >> /etc/default/grub
+    echo "✓ Added GRUB_TIMEOUT=5"
 fi
 
-# Ensure GRUB_TIMEOUT_STYLE is set to hidden
+# Ensure GRUB_TIMEOUT_STYLE is set to menu
 if grep -q "^GRUB_TIMEOUT_STYLE=" /etc/default/grub; then
-    sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' /etc/default/grub
-    echo "✓ Set GRUB_TIMEOUT_STYLE to hidden"
+    sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/' /etc/default/grub
+    echo "✓ Set GRUB_TIMEOUT_STYLE to menu"
 else
-    echo 'GRUB_TIMEOUT_STYLE=hidden' >> /etc/default/grub
-    echo "✓ Added GRUB_TIMEOUT_STYLE=hidden"
+    echo 'GRUB_TIMEOUT_STYLE=menu' >> /etc/default/grub
+    echo "✓ Added GRUB_TIMEOUT_STYLE=menu"
 fi
 
 # Regenerate GRUB configuration
@@ -82,7 +82,7 @@ echo "=== Configuration Complete! ==="
 echo "Changes made:"
 echo "• Disabled 'Loading Linux...' and 'Loading initial ramdisk...' messages"
 echo "• Updated GRUB parameters for complete silent boot (loglevel=0)"
-echo "• Set GRUB timeout to 0 and timeout style to hidden"
+echo "• Set GRUB timeout to 5 seconds and timeout style to menu"
 echo "• Regenerated GRUB configuration"
 # echo
 # echo "Backup files created:"
