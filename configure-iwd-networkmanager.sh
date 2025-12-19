@@ -16,6 +16,15 @@ echo "==> Criando arquivo de configuração wifi-backend.conf..."
 sudo tee /etc/NetworkManager/conf.d/wifi-backend.conf > /dev/null << 'EOF'
 [device]
 wifi.backend=iwd
+
+[main]
+# Desabilita gerenciamento automático de WiFi
+# Isso impede que o NetworkManager reative o WiFi automaticamente
+plugins=keyfile
+
+[connection]
+# Respeita o estado do WiFi quando manualmente desligado
+wifi.powersave=ignore
 EOF
 
 echo "==> Arquivo criado:"
@@ -31,8 +40,9 @@ echo "==> Habilitando e iniciando iwd..."
 sudo systemctl enable iwd
 sudo systemctl start iwd
 
-# Reiniciar NetworkManager
-echo "==> Reiniciando NetworkManager..."
+# Habilitar e reiniciar NetworkManager
+echo "==> Habilitando e reiniciando NetworkManager..."
+sudo systemctl enable NetworkManager
 sudo systemctl restart NetworkManager
 
 echo ""
