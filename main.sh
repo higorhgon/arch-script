@@ -49,122 +49,48 @@ sudo pacman -Syu --needed --noconfirm \
     base-devel \
     git
 
-# INSTALL YAY
-if command -v yay &>/dev/null; then
-    echo "Yay is already installed"
+# INSTALL PARU
+if command -v paru &>/dev/null; then
+    echo "Paru is already installed"
 else
     cd ~ &&
-        git clone https://aur.archlinux.org/yay-bin.git ||
-        git clone --branch yay-bin --single-branch https://github.com/archlinux/aur.git yay-bin
-    cd yay-bin && makepkg -si --noconfirm
-    cd ~ && rm -rf yay-bin
+        git clone https://aur.archlinux.org/paru-bin.git
+    cd paru-bin && makepkg -si --noconfirm
+    cd ~ && rm -rf paru-bin
 fi
 
+# Function to install packages from a file
+install_from_file() {
+    local file=$1
+    if [[ -f "$file" ]]; then
+        echo "Installing packages from $file..."
+        # Remove comentários e linhas vazias, depois passa para o paru
+        grep -v '^#' "$file" | grep -v '^$' | xargs paru -S --noconfirm --needed
+    else
+        echo "Warning: Package list $file not found."
+    fi
+}
+
 # FILESYSTEMS
-yay -S --noconfirm \
-    dosfstools \
-    exfatprogs \
-    ntfs-3g
+install_from_file "pkglist/filesystems.txt"
 
 # ESSENTIALS
-yay -S --noconfirm \
-    7zip \
-    atuin \
-    btop \
-    bluetui \
-    blueberry \
-    cliphist \
-    eza \
-    fcitx5 \
-    fcitx5-configtool \
-    fcitx5-gtk \
-    fcitx5-qt \
-    fd \
-    fish \
-    fzf \
-    ghostty \
-    gnome-calculator \
-    gnome-keyring \
-    hyprland \
-    hyprlock \
-    hypridle \
-    hyprshot \
-    hyprpicker \
-    hyprpolkit \
-    impala \
-    kanata-bin \
-    lazydocker \
-    lazygit \
-    less \
-    lsof \
-    neovim \
-    nmrs \
-    opencode-bin \
-    pamixer \
-    qt5ct \
-    qt6ct \
-    qt5-graphicaleffects \
-    qt6-5compat \
-    ripgrep \
-    sddm-git \
-    starship \
-    stow \
-    swaync \
-    swww \
-    tlrc \
-    tmux \
-    unzip \
-    7zip \
-    waybar \
-    rofi \
-    rofimoji \
-    waypaper \
-    waybar \
-    wiremix \
-    wl-clipboard \
-    wl-clip-persist \
-    xdg-desktop-portal-termfilechooser-hunkyburrito-git \
-    xorg-xhost \
-    yazi \
-    zen-browser-bin
+install_from_file "pkglist/essentials.txt"
 
 # BOOTLOADER
-yay -S --noconfirm \
-    os-prober \
-    plymouth
+install_from_file "pkglist/bootloader.txt"
 
 # THEMES, ICONS, FONTS AND CURSORS
-yay -S --noconfirm \
-    bibata-cursor-theme-bin \
-    catppuccin-mocha-grub-theme-git \
-    dracula-gtk-theme \
-    noto-fonts-cjk \
-    papirus-icon-theme \
-    plymouth-theme-catppuccin-mocha-git \
-    catppuccin-sddm-theme-mocha \
-    ttf-jetbrains-mono \
-    ttf-jetbrains-mono-nerd \
-    ttf-nerd-fonts-symbols \
-    ttf-nerd-fonts-symbols-mono
+install_from_file "pkglist/themes.txt"
 
 # TRAY APPLETS
-yay -S --noconfirm \
-    networkmanager-openvpn
-    # blueman \
-    # network-manager-applet \
+install_from_file "pkglist/tray-applets.txt"
 
 # CONTAINERS
-yay -S --noconfirm \
-    docker \
-    docker-compose \
-    docker-buildx
+install_from_file "pkglist/containers.txt"
 
 # LANGUAGES
-yay -S --noconfirm \
-    php \
-    nodejs-lts-jod \
-    go \
-    rustup
+install_from_file "pkglist/languages.txt"
 
 # INITIALIZE RUST
 rustup default stable
