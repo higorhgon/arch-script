@@ -1,0 +1,1 @@
+docker run --rm -it -v ~/banjo-tooie:/banjo-tooie ubuntu bash
