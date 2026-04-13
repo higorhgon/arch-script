@@ -93,6 +93,7 @@ winbox
 wine
 winetricks
 woeusb-ng
+xdg-terminal-exec
 yazi
 zed
 zen-browser-bin
