@@ -1,0 +1,1 @@
+/home/administrador/arch-script/tmux/pkgbuild/theme_palette.h

@@ -1,0 +1,64 @@
+# Maintainer: Christian Hesse <mail@eworm.de>
+# Maintainer: T.J. Townsend <blakkheim@archlinux.org>
+# Custom: dim-inactive-panes + theme-palette patches
+
+pkgname=tmux
+pkgver=3.6_a
+pkgrel=2
+pkgdesc='Terminal multiplexer (with inactive pane dimming patch)'
+url='https://github.com/tmux/tmux/wiki'
+arch=('x86_64')
+license=('BSD')
+depends=('libevent' 'libevent_core-2.1.so'
+         'libutempter'
+         'ncurses' 'libncursesw.so'
+         'systemd-libs' 'libsystemd.so')
+makedepends=('git' 'systemd')
+provides=('tmux')
+conflicts=('tmux')
+source=("git+https://github.com/tmux/tmux.git#tag=${pkgver/_/}"
+        "dim-inactive-panes.patch"
+        "theme-palette.patch"
+        "force-redraw-on-focus-change.patch"
+        "theme_palette.h")
+sha256sums=('4889f3cdd14c538fa199e788e78ed4d0bc46f16d70d79b525d58e96d931ca47a'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP')
+
+prepare() {
+	cd "$pkgname"
+
+	# Apply inactive pane dimming (git diff format, -p1)
+	patch -Np1 < "$srcdir/dim-inactive-panes.patch"
+
+	# Apply theme-aware ANSI palette (traditional diff, -p1)
+	patch -Np1 < "$srcdir/theme-palette.patch"
+
+	# Force redraw on focus change so dimming updates immediately
+	patch -Np1 < "$srcdir/force-redraw-on-focus-change.patch"
+
+	# Copy the theme palette header required by theme-palette.patch
+	cp "$srcdir/theme_palette.h" theme_palette.h
+
+	sh autogen.sh
+}
+
+build() {
+	cd "$pkgname"
+
+	./configure \
+		--prefix=/usr \
+		--enable-sixel \
+		--enable-systemd \
+		--enable-utempter
+	make
+}
+
+package() {
+	cd "$pkgname"
+
+	make install DESTDIR="$pkgdir"
+	install -D -m0644 COPYING "$pkgdir/usr/share/licenses/tmux/LICENSE"
+}
