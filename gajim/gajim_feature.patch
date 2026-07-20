@@ -1,0 +1,370 @@
+diff -urN gajim-master_orig/gajim/common/modules/mam.py gajim-master_mod/gajim/common/modules/mam.py
+--- gajim-master_orig/gajim/common/modules/mam.py	2025-06-10 18:03:19.000000000 +0300
++++ gajim-master_mod/gajim/common/modules/mam.py	2025-06-29 17:03:36.404568400 +0300
+@@ -9,9 +9,10 @@
+ from typing import Any
+ 
+ from collections.abc import Generator
+-from datetime import datetime
+ from datetime import timedelta
+ from datetime import UTC
++from datetime import datetime, timezone
++import hashlib
+ 
+ import nbxmpp
+ from nbxmpp.errors import is_error
+@@ -44,6 +45,25 @@
+ from gajim.common.storage.archive import models as mod
+ from gajim.common.util.datetime import FIRST_UTC_DATETIME
+ 
++def _generate_pseudo_stanza_id(jid: str, timestamp: float, text: str,
++                                message_id: str, origin_id: str,
++                                remote_jid: str, delay_stamp: str,
++                                is_markable: bool, from_attr: str) -> str:
++    parts = [
++        str(jid),
++        str(timestamp),
++        text or '',
++        message_id or '',
++        origin_id or '',
++        str(remote_jid),
++        delay_stamp or '',
++        '1' if is_markable else '0',
++        str(from_attr),
++    ]
++    data = '|'.join(parts)
++    return hashlib.sha256(data.encode('utf-8')).hexdigest()
++
++
+ 
+ class MAM(BaseModule):
+ 
+@@ -66,11 +86,13 @@
+                           priority=41),
+         ]
+ 
++        self._pending_message_ids = set()
+         self.available = False
+         self._mam_query_ids: dict[JID, str] = {}
+ 
+         # Holds archive jids where catch up was successful
+         self._catch_up_finished: list[JID] = []
++        self._seen_message_ids: set[str] = set()
+ 
+         self._con.connect_signal('state-changed', self._on_client_state_changed)
+         self._con.connect_signal('resume-failed', self._on_client_resume_failed)
+@@ -205,45 +227,82 @@
+             )
+         )
+ 
+-    def _mam_message_received(self,
+-                              _con: types.NBXMPPClient,
+-                              stanza: Message,
+-                              properties: MessageProperties
+-                              ) -> None:
+-
+-        if not properties.is_mam_message:
++    def _mam_message_received(self, _con, stanza: Message, props: MessageProperties) -> None:
++        if not props.is_mam_message:
+             return
+ 
+-        app.ged.raise_event(
+-            RawMamMessageReceived(account=self._account,
+-                                  stanza=stanza,
+-                                  properties=properties))
++        assert props.mam is not None
++        archive_jid = props.mam.archive
+ 
+-        assert properties.mam is not None
+-        if not self._from_valid_archive(stanza, properties):
+-            self._log.warning('Message from invalid archive %s',
+-                              properties.mam.archive)
++        # Always generate pseudo-stanza-id
++        ts = props.timestamp or datetime.now(UTC).timestamp()
++        text = stanza.getBody() or ''
++        message_id = stanza.getAttr('id') or ''
++        origin_id = stanza.getTagData('origin-id') or ''
++        remote = str(props.remote_jid or stanza.getFrom())
++        delay_stamp = ''
++        if props.timestamp:
++            delay_stamp = datetime.fromtimestamp(props.timestamp, tz=timezone.utc).isoformat()
++        is_markable = stanza.getTag('markable') is not None
++        from_attr = str(stanza.getFrom() or '')
++
++        pseudo_id = _generate_pseudo_stanza_id(
++            jid=remote,
++            timestamp=ts,
++            text=text,
++            message_id=message_id,
++            origin_id=origin_id,
++            remote_jid=remote,
++            delay_stamp=delay_stamp,
++            is_markable=is_markable,
++            from_attr=from_attr,
++        )
++
++
++
++        props.stanza_ids.clear()
++        props.stanza_ids.append(StanzaIDData(by=str(archive_jid), id=pseudo_id))
++        self._log.info('[MAM] Final props.stanza_id is set to: %s', props.stanza_ids[0].id)
++
++        message_id = stanza.getAttr('id')
++        if message_id in self._seen_message_ids or message_id in self._pending_message_ids:
++            self._log.info('[MAM] Skipping duplicate message-id (pending or seen): %s', message_id)
+             raise nbxmpp.NodeProcessed
+ 
+-        self._log.info('Received message from archive: %s',
+-                       properties.mam.archive)
+-        if not self._is_valid_request(properties):
+-            self._log.warning('Invalid MAM Message: unknown query id %s',
+-                              properties.mam.query_id)
+-            self._log.warning(stanza)
++        self._seen_message_ids.add(message_id)
++
++        if message_id:
++            if app.storage.archive.check_if_message_id_exists(self._account, props.remote_jid, message_id):
++                if not app.storage.archive.check_if_stanza_id_exists(self._account, props.remote_jid, pseudo_id):
++                    app.storage.archive.save_stanza_id_for_message_id(
++                        self._account, props.remote_jid, message_id, pseudo_id
++                    )
++                    self._log.info('[MAM] Updated stanza-id for existing message-id: %s', message_id)
++                else:
++                    self._log.info('[MAM] Skipping fully duplicate message-id: %s', message_id)
++                raise nbxmpp.NodeProcessed
++            else:
++                app.storage.archive.save_stanza_id_for_message_id(
++                    self._account, props.remote_jid, message_id, pseudo_id
++                )
++
++        if not self._from_valid_archive(stanza, props):
++            self._log.warning('Invalid archive: %s', archive_jid)
+             raise nbxmpp.NodeProcessed
+ 
+-        assert properties.remote_jid is not None
+-        stanza_id = properties.mam.id
++        if not self._is_valid_request(props):
++            self._log.warning('Invalid MAM query ID: %s', props.mam.query_id)
++            raise nbxmpp.NodeProcessed
+ 
+-        if app.storage.archive.check_if_stanza_id_exists(
+-            self._account,
+-            properties.remote_jid,
+-            stanza_id
+-        ):
+-            self._log.info('Received duplicated message from MAM: %s', stanza_id)
++        assert props.remote_jid is not None
++        sid = pseudo_id
++        if app.storage.archive.check_if_stanza_id_exists(self._account, props.remote_jid, sid):
++            self._log.info('Skipping duplicate pseudo stanza-id: %s', sid)
+             raise nbxmpp.NodeProcessed
+ 
++        app.ged.raise_event(RawMamMessageReceived(account=self._account, stanza=stanza, properties=props))
++
++
+     def _is_valid_request(self, properties: MessageProperties) -> bool:
+         assert properties.mam is not None
+         valid_id = self._mam_query_ids.get(properties.mam.archive, None)
+diff -urN gajim-master_orig/gajim/common/modules/message.py gajim-master_mod/gajim/common/modules/message.py
+--- gajim-master_orig/gajim/common/modules/message.py	2025-06-10 18:03:19.000000000 +0300
++++ gajim-master_mod/gajim/common/modules/message.py	2025-06-29 17:01:14.595681400 +0300
+@@ -90,10 +90,26 @@
+             raise nbxmpp.NodeProcessed
+ 
+     def _message_received(self,
+-                          _con: types.NBXMPPClient,
+-                          stanza: nbxmpp.Message,
+-                          properties: MessageProperties
+-                          ) -> None:
++                      _con: types.NBXMPPClient,
++                      stanza,
++                      properties: MessageProperties
++                      ) -> None:
++        remote_jid = properties.remote_jid or properties.jid or stanza.getFrom()
++        if remote_jid is None:
++            self._log.warning('[message.py] remote_jid is None, skipping message')
++            return
++
++        jid = properties.jid or remote_jid
++        if jid is None:
++            self._log.warning('[message.py] jid is None, skipping message')
++            return
++
++        if properties.is_mam_message:
++            sid = self._get_stanza_id(properties)
++            if sid and app.storage.archive.check_if_stanza_id_exists(
++                self._account, properties.jid, sid):
++                self._log.info('[message.py] Skipping duplicate stanza-id in _message_received: %s', sid)
++                return
+ 
+         if properties.is_pubsub or properties.type.is_error:
+             return
+@@ -123,10 +139,12 @@
+             stanza.setFrom(to)
+ 
+         timestamp = get_message_timestamp(properties)
+-        remote_jid = properties.remote_jid
+-        jid = properties.jid
+-        assert remote_jid is not None
+-        assert jid is not None
++        remote_jid = properties.remote_jid or properties.jid or stanza.getFrom()
++        jid = properties.jid or properties.remote_jid or stanza.getFrom()
++
++        if remote_jid is None or jid is None:
++            self._log.warning('[message.py] Still missing JID info. remote_jid: %s, jid: %s. Skipping message.', remote_jid, jid)
++            return
+ 
+         muc_data = None
+         if properties.type.is_groupchat:
+@@ -145,14 +163,30 @@
+             user_delay_ts = dt.datetime.fromtimestamp(
+                 properties.user_timestamp, tz=dt.UTC)
+ 
+-        message_id = properties.id
++        message_id = properties.id or stanza.getAttr('id') or self._generate_id()
+         if message_id is None:
+             # TODO: Make Gajim not depend on a message_id being present
+-            message_id = generate_id()
++            message_id = self._generate_id()
+             self._log.debug('Generating id for message')
+ 
+         stanza_id = self._get_stanza_id(properties)
+ 
++        if (properties.is_mam_message and
++            app.storage.archive.check_if_message_id_exists(self._account, remote_jid, message_id)):
++
++            if not app.storage.archive.check_if_stanza_id_exists(self._account, remote_jid, stanza_id):
++                app.storage.archive.save_stanza_id_for_message_id(self._account, remote_jid, message_id, stanza_id)
++                self._log.info('[message.py] Updated stanza-id for already archived message-id: %s', message_id)
++                return
++            else:
++                self._log.info('[message.py] Fully duplicate MAM message skipped: %s', message_id)
++                return
++
++        if stanza_id is not None:
++            if app.storage.archive.check_if_stanza_id_exists(self._account, remote_jid, stanza_id):
++                self._log.info('[message.py] Skipping duplicate stanza-id: %s', stanza_id)
++                return
++
+         # Fallback to message-id in case the MUC strips origin-id
+         # https://dev.gajim.org/gajim/gajim/-/issues/11837
+         origin_id = properties.origin_id or properties.id
+@@ -200,7 +234,6 @@
+                 properties
+             )
+ 
+-        assert properties.bodies is not None
+         message_text = properties.bodies.get(None)
+         oob_data = parse_oob(properties)
+ 
+@@ -220,9 +253,13 @@
+             self._account, remote_jid, timestamp, properties.security_label)
+         reply = get_reply(properties.reply_data)
+ 
+-        correction_id = None
+-        if properties.correction is not None:
+-            correction_id = properties.correction.id
++        correction_id = properties.correction.id if properties.correction else None
++
++        if remote_jid is None:
++            remote_jid = properties.jid or stanza.getFrom()
++            if remote_jid is None:
++                self._log.warning('[message.py] remote_jid is still None, skipping')
++                return
+ 
+         message_data = mod.Message(
+             account_=self._account,
+@@ -244,10 +281,18 @@
+             reply=reply,
+             thread_id_=properties.thread,
+         )
++        message_data.account = self._account
++        message_data.remote = remote_jid
++        if remote_jid is None:
++            self._log.warning('[message.py] remote_jid is None right before message creation. Skipping.')
++            return
++
+ 
+         try:
+-            pk = app.storage.archive.insert_object(
+-                message_data, ignore_on_conflict=False)
++            pk = app.storage.archive.insert_object(message_data)
++            if pk == -1:
++                self._log.warning('Message not inserted into DB, skipping event raise')
++                return
+         except sqlalchemy.exc.IntegrityError:
+             self._log.exception('Insertion Error')
+             return
+@@ -272,8 +317,10 @@
+                                 properties: MessageProperties
+                                 ) -> None:
+ 
+-        remote_jid = properties.remote_jid
+-        assert remote_jid is not None
++        remote_jid = properties.remote_jid or properties.jid or stanza.getFrom()
++        if remote_jid is None:
++            self._log.warning('remote_jid is None, skipping message')
++            return
+         message_id = properties.id
+         if message_id is None:
+             self._log.warning('Received error without message id')
+@@ -460,6 +507,8 @@
+             security_label_=securitylabel_data,
+             occupant_=occupant,
+         )
++        message_data.account = self._account
++        message_data.remote = remote_jid
+ 
+         pk = app.storage.archive.insert_object(message_data)
+         if pk == -1:
+diff -urN gajim-master_orig/gajim/common/storage/archive/storage.py gajim-master_mod/gajim/common/storage/archive/storage.py
+--- gajim-master_orig/gajim/common/storage/archive/storage.py	2025-06-10 18:03:19.000000000 +0300
++++ gajim-master_mod/gajim/common/storage/archive/storage.py	2025-06-29 16:46:53.605119300 +0300
+@@ -110,6 +110,33 @@
+             self._make_backup()
+             migration.run(self, user_version)
+ 
++    @with_session
++    @timeit
++    def save_stanza_id_for_message_id(
++        self,
++        session: Session,
++        account: str,
++        jid: JID,
++        message_id: str,
++        stanza_id: str
++    ) -> None:
++        fk_account_pk = self._get_account_pk(session, account)
++        fk_remote_pk = self._get_jid_pk(session, jid)
++
++        stmt = (
++            update(Message)
++            .where(
++                Message.id == message_id,
++                Message.fk_account_pk == fk_account_pk,
++                Message.fk_remote_pk == fk_remote_pk,
++                Message.stanza_id.is_(None),
++            )
++            .values(stanza_id=stanza_id)
++    )
++
++        session.execute(stmt)
++
++
+     @timeit
+     def _load_jids(self, session: Session) -> None:
+         jids = session.scalars(select(Remote))
+@@ -214,6 +241,13 @@
+         obj.validate()
+         self._set_foreign_keys(session, obj)
+         self._log_row(obj)
++
++        if isinstance(obj, Message):
++            if obj.id and self.check_if_message_id_exists(obj.account, obj.remote, obj.id):
++                if self.check_if_stanza_id_exists(obj.account, obj.remote, obj.stanza_id):
++                    log.info('[storage.py] Preventing duplicate message insert (ID+SID): %s | %s', obj.id, obj.stanza_id)
++                    return -1
++
+         session.add(obj)
+ 
+         try:
