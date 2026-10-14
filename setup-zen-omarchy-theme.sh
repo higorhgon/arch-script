@@ -163,11 +163,14 @@ HOOK_EOF
 chmod +x "$HOOK"
 
 print_status "Passo 3: habilitando userChrome.css nos perfis do Zen"
+# Grava no user.js (aplicado a cada inicializacao, ao contrario do prefs.js,
+# que o proprio Zen reescreve). Idempotente: nao duplica a linha.
+PREF='user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);'
 for prefs in "$HOME"/.zen/*/prefs.js; do
     [[ -f $prefs ]] || continue
-    if ! grep -q 'toolkit.legacyUserProfileCustomizations.stylesheets", true' "$prefs"; then
-        user_js="$(dirname "$prefs")/user.js"
-        echo 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);' >> "$user_js"
+    user_js="$(dirname "$prefs")/user.js"
+    if ! grep -qF "$PREF" "$user_js" 2>/dev/null; then
+        echo "$PREF" >> "$user_js"
         print_status "Habilitado em $user_js"
     fi
 done
