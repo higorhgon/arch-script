@@ -180,6 +180,8 @@ cat > "$HOOK" <<'HOOK_EOF'
 src="$HOME/.local/state/omarchy/current/theme/zen-userchrome.css"
 [[ -f $src ]] || exit 0
 
+changed=0
+
 for base in "$HOME/.zen" "$HOME/.config/zen"; do
     [[ -d $base ]] || continue
 
@@ -196,8 +198,17 @@ for base in "$HOME/.zen" "$HOME/.config/zen"; do
     [[ -d $dir ]] || continue
 
     mkdir -p "$dir/chrome"
+    cmp -s "$src" "$dir/chrome/userChrome.css" || changed=1
     install -m 644 "$src" "$dir/chrome/userChrome.css"
 done
+
+# O Zen so le o userChrome.css ao iniciar: avisa se ele estiver aberto
+# e o tema realmente mudou (ignora processos zumbis).
+if [[ $changed -eq 1 ]] && ps -C zen-bin -o stat= | grep -qv '^Z'; then
+    omarchy notification send -t 10000 "Reinicie o Zen Browser" \
+        "O tema do Omarchy mudou. Reinicie o Zen para aplicar as novas cores." 2>/dev/null ||
+        notify-send "Reinicie o Zen Browser" "O tema do Omarchy mudou. Reinicie o Zen para aplicar as novas cores."
+fi
 HOOK_EOF
 chmod +x "$HOOK"
 
