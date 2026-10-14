@@ -25,8 +25,14 @@ if ! command -v omarchy &> /dev/null; then
     exit 1
 fi
 
-if [[ ! -d "$HOME/.zen" ]]; then
-    print_warning "~/.zen nao existe. Abra o Zen ao menos uma vez e rode de novo."
+# O Zen guarda os perfis em ~/.zen ou em ~/.config/zen, conforme a instalacao
+ZEN_BASES=()
+for base in "$HOME/.zen" "$HOME/.config/zen"; do
+    [[ -d $base ]] && ZEN_BASES+=("$base")
+done
+
+if [[ ${#ZEN_BASES[@]} -eq 0 ]]; then
+    print_warning "Nem ~/.zen nem ~/.config/zen existem. Abra o Zen ao menos uma vez e rode de novo."
     exit 1
 fi
 
@@ -58,6 +64,13 @@ cat > "$TEMPLATE" <<'TEMPLATE_EOF'
   --zen-dialog-background: {{ background }} !important;
   --zen-primary-color: {{ accent }} !important;
   --zen-element-separation: 0px !important;
+
+  /* Fundo base do Zen (evita faixas escuras fora do compact mode) */
+  --zen-main-browser-background: {{ background }} !important;
+  --zen-main-browser-background-toolbar: {{ background }} !important;
+  --zen-main-browser-background-old: {{ background }} !important;
+  --zen-main-browser-background-toolbar-old: {{ background }} !important;
+  --zen-themed-toolbar-bg-transparent: {{ background }} !important;
 
   /* Menus e paineis */
   --arrowpanel-background: {{ background }} !important;
@@ -143,22 +156,48 @@ browser, #tabbrowser-tabpanels, .browserStack { background-color: var(--omarchy-
   background: Field !important;
   color: FieldText !important;
 }
+
+/* ── Compact mode desativado: sem faixa escura em volta da sidebar ── */
+.zen-toolbar-background,
+.zen-browser-generic-background {
+  background: {{ background }} !important;
+  box-shadow: none !important;
+}
+.zen-toolbar-background::before,
+.zen-toolbar-background::after,
+.zen-browser-generic-background::before,
+.zen-browser-generic-background::after {
+  background: {{ background }} !important;
+  outline: none !important;
+}
 TEMPLATE_EOF
 
 print_status "Passo 2: instalando hook em $HOOK"
 cat > "$HOOK" <<'HOOK_EOF'
 #!/bin/bash
 # Copia o userChrome.css gerado pelo tema do Omarchy para o perfil padrao do Zen.
+# Suporta os dois diretorios de configuracao: ~/.zen e ~/.config/zen.
 src="$HOME/.local/state/omarchy/current/theme/zen-userchrome.css"
 [[ -f $src ]] || exit 0
 
-# Perfil padrao: entrada Default= da secao [Install...] do installs.ini
-profile=$(awk -F= '/^Default=/{print $2; exit}' "$HOME/.zen/installs.ini" 2>/dev/null)
-[[ -n $profile && -d "$HOME/.zen/$profile" ]] || exit 0
+for base in "$HOME/.zen" "$HOME/.config/zen"; do
+    [[ -d $base ]] || continue
 
-dir="$HOME/.zen/$profile/chrome"
-mkdir -p "$dir"
-install -m 644 "$src" "$dir/userChrome.css"
+    # Perfil padrao: Default= da secao [Install...] do installs.ini;
+    # senao, o perfil com Default=1 no profiles.ini
+    profile=$(awk -F= '/^Default=/{print $2; exit}' "$base/installs.ini" 2>/dev/null)
+    if [[ -z $profile ]]; then
+        profile=$(awk -F= '/^\[/{if(d&&p){print p;f=1;exit} p="";d=0} /^Path=/{p=$2} /^Default=1$/{d=1} END{if(!f&&d&&p)print p}' "$base/profiles.ini" 2>/dev/null)
+    fi
+    [[ -n $profile ]] || continue
+
+    # Path pode ser relativo ao diretorio base ou absoluto
+    [[ $profile == /* ]] && dir="$profile" || dir="$base/$profile"
+    [[ -d $dir ]] || continue
+
+    mkdir -p "$dir/chrome"
+    install -m 644 "$src" "$dir/chrome/userChrome.css"
+done
 HOOK_EOF
 chmod +x "$HOOK"
 
@@ -166,13 +205,15 @@ print_status "Passo 3: habilitando userChrome.css nos perfis do Zen"
 # Grava no user.js (aplicado a cada inicializacao, ao contrario do prefs.js,
 # que o proprio Zen reescreve). Idempotente: nao duplica a linha.
 PREF='user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);'
-for prefs in "$HOME"/.zen/*/prefs.js; do
-    [[ -f $prefs ]] || continue
-    user_js="$(dirname "$prefs")/user.js"
-    if ! grep -qF "$PREF" "$user_js" 2>/dev/null; then
-        echo "$PREF" >> "$user_js"
-        print_status "Habilitado em $user_js"
-    fi
+for base in "${ZEN_BASES[@]}"; do
+    for prefs in "$base"/*/prefs.js; do
+        [[ -f $prefs ]] || continue
+        user_js="$(dirname "$prefs")/user.js"
+        if ! grep -qF "$PREF" "$user_js" 2>/dev/null; then
+            echo "$PREF" >> "$user_js"
+            print_status "Habilitado em $user_js"
+        fi
+    done
 done
 
 print_status "Passo 4: gerando o tema atual"
